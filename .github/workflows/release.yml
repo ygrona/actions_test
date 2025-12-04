@@ -39,7 +39,12 @@ jobs:
       - name: Get tag name
         id: tag
         run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-
+      - name: Debug OIDC token
+        run: |
+          echo "GITHUB_REPOSITORY: $GITHUB_REPOSITORY"
+          echo "GITHUB_REF: $GITHUB_REF"
+          echo "ID_TOKEN: $ACTIONS_ID_TOKEN_REQUEST_TOKEN"
+          echo ">> $ACTIONS_ID_TOKEN_REQUEST_TOKEN"
       - name: Configure AWS OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
