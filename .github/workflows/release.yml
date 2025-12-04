@@ -1,0 +1,60 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'release-v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: prod
+    permissions:
+      id-token: write
+      contents: read
+      deployments: write
+
+    steps:
+      - run: echo "The job was automatically triggered by a ${{ github.event_name }} event."
+      - run: echo "This job is now running on a ${{ runner.os }}"
+      - run: echo "The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
+
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: files listing after checkout
+        run: |
+                  ls ${{ github.workspace }}
+
+      - name: Set up JDK 8
+        uses: actions/setup-java@v4
+        with:
+          java-version: '1.8'
+          distribution: 'corretto'
+
+      - name: Build with Maven
+        run: mvn -B clean package -DskipTests
+
+      - name: Get tag name
+        id: tag
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Configure AWS OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Upload JAR to S3 + make it LATEST
+        run: |
+          JAR=$(ls target/*.jar)
+          TAG=${{ steps.tag.outputs.tag }}
+          aws s3 cp $JAR s3://my-app-jars-bucket/releases/my-app-${TAG}.jar
+          aws s3 cp $JAR s3://my-app-jars-bucket/releases/LATEST --metadata-directive REPLACE
+
+      - name: Restart EC2 instances
+        run: |
+          INSTANCES=$(aws ec2 describe-instances --filters "Name=tag:App,Values=my-app" --query "Reservations[].Instances[].InstanceId" --output text)
+          [ -n "$INSTANCES" ] && aws ec2 reboot-instances --instance-ids $INSTANCES
+      - run: echo "🍏 This job's status is ${{ job.status }}."
