@@ -43,8 +43,10 @@ jobs:
         run: |
           echo "GITHUB_REPOSITORY: $GITHUB_REPOSITORY"
           echo "GITHUB_REF: $GITHUB_REF"
-          echo "ID_TOKEN: $ACTIONS_ID_TOKEN_REQUEST_TOKEN"
-          echo ">> $ACTIONS_ID_TOKEN_REQUEST_TOKEN"
+          TOKEN=$(curl -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+          -H "Accept: application/json" \
+          "$ACTIONS_ID_TOKEN_REQUEST_URL" | jq -r .value)
+          echo "$TOKEN"
       - name: Configure AWS OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -57,9 +59,3 @@ jobs:
           TAG=${{ steps.tag.outputs.tag }}
           aws s3 cp $JAR s3://a1984-cf/app/releases/my-app-${TAG}.jar
           aws s3 cp $JAR s3://a1984-cf/app/releases/LATEST --metadata-directive REPLACE
-
-      - name: Restart EC2 instances
-        run: |
-          INSTANCES=$(aws ec2 describe-instances --filters "Name=tag:App,Values=my-app" --query "Reservations[].Instances[].InstanceId" --output text)
-          [ -n "$INSTANCES" ] && aws ec2 reboot-instances --instance-ids $INSTANCES
-      - run: echo "🍏 This job's status is ${{ job.status }}."
