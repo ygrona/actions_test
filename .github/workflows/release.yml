@@ -7,7 +7,25 @@ on:
   workflow_dispatch:
 
 jobs:
+
+  generate-options:
+    runs-on: ubuntu-latest
+    outputs:
+      tags: ${{ steps.tags.outputs.tags }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get tags
+        id: tags
+        run: |
+          TAGS=$(git ls-remote --tags origin | \
+                 grep 'refs/tags/release-v' | \
+                 sed 's|.*/release-v|release-v|' | \
+                 sort -Vr | head -30 | jq -R . | jq -s .)
+          echo "tags=$TAGS" >> $GITHUB_OUTPUT
+
   build:
+    needs: generate-options
     runs-on: ubuntu-latest
     environment: prod
     permissions:
