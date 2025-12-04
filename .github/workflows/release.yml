@@ -50,8 +50,8 @@ jobs:
         run: |
           JAR=$(ls target/*.jar)
           TAG=${{ steps.tag.outputs.tag }}
-          aws s3 cp $JAR s3://my-app-jars-bucket/releases/my-app-${TAG}.jar
-          aws s3 cp $JAR s3://my-app-jars-bucket/releases/LATEST --metadata-directive REPLACE
+          aws s3 cp $JAR s3://a1984-cf/app/releases/my-app-${TAG}.jar
+          aws s3 cp $JAR s3://a1984-cf/app/releases/LATEST --metadata-directive REPLACE
 
       - name: Restart EC2 instances
         run: |
