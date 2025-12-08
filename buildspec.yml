@@ -1,0 +1,9 @@
+# buildspec.yml
+version: 0.2
+phases:
+  build:
+    commands:
+      - mvn -B clean package -DskipTests
+      - TAG=${CODEBUILD_SOURCE_VERSION#refs/tags/}
+      - JAR=$(ls target/*.jar)
+      - aws s3 cp $JAR s3://a1984-cf/appcb/releases/my-app-${TAG}.jar
